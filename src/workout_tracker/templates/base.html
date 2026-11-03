@@ -4,19 +4,61 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{% block title %}Workout Tracker{% endblock %}</title>
+  <script>
+    (function () {
+      try {
+        var key = "workout-tracker-theme";
+        var saved = localStorage.getItem(key);
+        var theme = (saved === "light" || saved === "dark")
+          ? saved
+          : (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+        document.documentElement.setAttribute("data-theme", theme);
+      } catch (e) {
+        document.documentElement.setAttribute("data-theme", "dark");
+      }
+    })();
+  </script>
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
   <header class="top">
     <a class="brand" href="/">Workout Tracker</a>
-    <nav>
-      <a href="/">Today</a>
-      <a href="/regiment">Regiment</a>
-      <a href="/sessions">History</a>
-    </nav>
+    <div class="top-actions">
+      <nav>
+        <a href="/">Today</a>
+        <a href="/regiment">Regiment</a>
+        <a href="/sessions">History</a>
+      </nav>
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle light and dark mode" title="Toggle theme">
+        <span class="icon-moon" aria-hidden="true">Dark</span>
+        <span class="icon-sun" aria-hidden="true">Light</span>
+      </button>
+    </div>
   </header>
   <main class="wrap">
     {% block content %}{% endblock %}
   </main>
+  <script>
+    (function () {
+      var key = "workout-tracker-theme";
+      var btn = document.getElementById("theme-toggle");
+      if (!btn) return;
+
+      function currentTheme() {
+        return document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+      }
+
+      function apply(theme) {
+        document.documentElement.setAttribute("data-theme", theme);
+        try { localStorage.setItem(key, theme); } catch (e) {}
+        btn.setAttribute("aria-pressed", theme === "dark" ? "true" : "false");
+      }
+
+      apply(currentTheme());
+      btn.addEventListener("click", function () {
+        apply(currentTheme() === "dark" ? "light" : "dark");
+      });
+    })();
+  </script>
 </body>
 </html>
