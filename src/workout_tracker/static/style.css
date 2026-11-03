@@ -8,7 +8,31 @@
   --danger: #e35d6a;
   --border: #2c3848;
   --input: #121820;
+  --header-bg: #0c1015;
+  --control-bg: #243041;
+  --primary-fg: #04150e;
+  color-scheme: dark;
   font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+html[data-theme="light"] {
+  --bg: #f4f6f8;
+  --card: #ffffff;
+  --text: #1a2330;
+  --muted: #5c6b7a;
+  --accent: #1f9d6a;
+  --accent-dim: #178556;
+  --danger: #c43c4a;
+  --border: #d5dde6;
+  --input: #eef2f6;
+  --header-bg: #e8eef4;
+  --control-bg: #e2e8ef;
+  --primary-fg: #ffffff;
+  color-scheme: light;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -30,15 +54,40 @@ a:hover { text-decoration: underline; }
   gap: 1rem;
   padding: 0.9rem 1.25rem;
   border-bottom: 1px solid var(--border);
-  background: #0c1015;
+  background: var(--header-bg);
   position: sticky;
   top: 0;
+  z-index: 10;
 }
 
 .brand { font-weight: 700; color: var(--text); letter-spacing: 0.02em; }
-nav { display: flex; gap: 1rem; }
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+nav { display: flex; gap: 1rem; align-items: center; }
 nav a { color: var(--muted); }
 nav a:hover { color: var(--text); }
+
+.theme-toggle {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--control-bg);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 0.35rem 0.65rem;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  width: fit-content;
+  line-height: 1.2;
+}
+.theme-toggle:hover { filter: brightness(1.08); }
+.theme-toggle .icon-sun { display: none; }
+.theme-toggle .icon-moon { display: inline; }
+html[data-theme="light"] .theme-toggle .icon-sun { display: inline; }
+html[data-theme="light"] .theme-toggle .icon-moon { display: none; }
 
 .wrap {
   max-width: 720px;
@@ -87,7 +136,7 @@ textarea {
 button {
   appearance: none;
   border: 1px solid var(--border);
-  background: #243041;
+  background: var(--control-bg);
   color: var(--text);
   border-radius: 8px;
   padding: 0.55rem 0.9rem;
@@ -100,7 +149,7 @@ button:hover { filter: brightness(1.08); }
 button.primary {
   background: var(--accent-dim);
   border-color: var(--accent);
-  color: #04150e;
+  color: var(--primary-fg);
   font-weight: 600;
 }
 button.danger {
@@ -126,7 +175,7 @@ button.danger {
   margin-left: 0.4rem;
   padding: 0.1rem 0.45rem;
   border-radius: 999px;
-  background: #243041;
+  background: var(--control-bg);
   color: var(--muted);
   font-size: 0.8rem;
 }
@@ -140,7 +189,7 @@ code {
 a.buttonish {
   display: inline-block;
   border: 1px solid var(--border);
-  background: #243041;
+  background: var(--control-bg);
   color: var(--text);
   border-radius: 8px;
   padding: 0.55rem 0.9rem;
