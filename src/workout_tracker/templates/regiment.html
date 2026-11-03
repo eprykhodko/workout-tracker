@@ -4,17 +4,79 @@
 <section class="card">
   <h1>Active regiment</h1>
   {% if active %}
-    <h2>{{ active.name }}</h2>
-    <p>{{ active.description }}</p>
+    <form method="post" action="/regiment/{{ active.id }}/meta" class="stack">
+      <label>
+        Name
+        <input type="text" name="name" value="{{ active.name }}" required />
+      </label>
+      <label>
+        Description
+        <textarea name="description" rows="2">{{ active.description }}</textarea>
+      </label>
+      <div class="row">
+        <button type="submit" class="primary">Save regiment</button>
+      </div>
+    </form>
+    <form method="post" action="/regiment/{{ active.id }}/delete" class="stack"
+          onsubmit="return confirm('Delete this regiment and its weekly plan?');">
+      <button type="submit" class="danger">Delete regiment</button>
+    </form>
   {% else %}
-    <p>No regiment active.</p>
+    <p>No regiment active. Create one below.</p>
   {% endif %}
+</section>
+
+{% if regiments|length > 1 %}
+<section class="card">
+  <h2>Switch regiment</h2>
+  <ul class="plain">
+    {% for r in regiments %}
+      <li class="row between">
+        <span>
+          <strong>{{ r.name }}</strong>
+          {% if r.is_active %}<span class="tag">active</span>{% endif %}
+          {% if r.description %}<div class="muted">{{ r.description }}</div>{% endif %}
+        </span>
+        {% if not r.is_active %}
+          <form method="post" action="/regiment/activate">
+            <input type="hidden" name="regiment_id" value="{{ r.id }}" />
+            <button type="submit">Activate</button>
+          </form>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<section class="card">
+  <h2>New regiment</h2>
+  <form method="post" action="/regiment/create" class="stack">
+    <label>
+      Name
+      <input type="text" name="name" required placeholder="e.g. 4-day upper/lower" />
+    </label>
+    <label>
+      Description
+      <textarea name="description" rows="2" placeholder="Notes about this plan"></textarea>
+    </label>
+    <label class="row">
+      <input type="checkbox" name="make_active" checked />
+      Make active
+    </label>
+    <button type="submit" class="primary">Create</button>
+  </form>
 </section>
 
 {% for day in days %}
 <section class="card">
-  <h2>{{ WEEKDAYS[day.weekday] }} — {{ day.title }}</h2>
-  {% if day.notes %}<p class="muted">{{ day.notes }}</p>{% endif %}
+  <div class="row between">
+    <div>
+      <h2>{{ WEEKDAYS[day.weekday] }} — {{ day.title }}</h2>
+      {% if day.notes %}<p class="muted">{{ day.notes }}</p>{% endif %}
+    </div>
+    <a class="buttonish" href="/regiment/days/{{ day.id }}">Edit day</a>
+  </div>
   {% if day.exercises %}
     <ul class="plan-list">
       {% for ex in day.exercises %}

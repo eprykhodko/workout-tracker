@@ -144,6 +144,91 @@ def activate_regiment(regiment_id: int = Form(...)):
     return RedirectResponse("/regiment", status_code=303)
 
 
+@app.post("/regiment/create")
+def create_regiment(
+    name: str = Form(...),
+    description: str = Form(""),
+    make_active: str | None = Form(None),
+):
+    with db.get_db() as conn:
+        db.create_regiment(
+            conn,
+            name=name.strip() or "My regiment",
+            description=description.strip(),
+            make_active=make_active is not None,
+        )
+    return RedirectResponse("/regiment", status_code=303)
+
+
+@app.post("/regiment/{regiment_id}/meta")
+def update_regiment_meta(
+    regiment_id: int,
+    name: str = Form(...),
+    description: str = Form(""),
+):
+    with db.get_db() as conn:
+        db.update_regiment(
+            conn, regiment_id, name=name.strip() or "Regiment", description=description.strip()
+        )
+    return RedirectResponse("/regiment", status_code=303)
+
+
+@app.post("/regiment/{regiment_id}/delete")
+def remove_regiment(regiment_id: int):
+    with db.get_db() as conn:
+        db.delete_regiment(conn, regiment_id)
+    return RedirectResponse("/regiment", status_code=303)
+
+
+@app.get("/regiment/days/{day_id}", response_class=HTMLResponse)
+def edit_day(request: Request, day_id: int):
+    with db.get_db() as conn:
+        day = db.get_planned_day(conn, day_id)
+        if not day:
+            raise HTTPException(status_code=404, detail="Day not found")
+        regiment = conn.execute(
+            "SELECT * FROM regiment WHERE id = ?", (day["regiment_id"],)
+        ).fetchone()
+    return templates.TemplateResponse(
+        request,
+        "day_edit.html",
+        {"day": day, "regiment": dict(regiment) if regiment else None},
+    )
+
+
+@app.post("/regiment/days/{day_id}")
+def save_day(
+    day_id: int,
+    title: str = Form(...),
+    notes: str = Form(""),
+    exercises_text: str = Form(""),
+):
+    """
+    exercises_text lines:
+      Bench Press | 3x5 | optional notes
+      Squat | 3x5
+      Deadlift
+    """
+    exercises: list[tuple[str, str, str]] = []
+    for line in (exercises_text or "").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        parts = [p.strip() for p in line.split("|")]
+        name = parts[0] if parts else ""
+        target = parts[1] if len(parts) > 1 else ""
+        notes_ex = parts[2] if len(parts) > 2 else ""
+        if name:
+            exercises.append((name, target, notes_ex))
+
+    with db.get_db() as conn:
+        if not db.get_planned_day(conn, day_id):
+            raise HTTPException(status_code=404, detail="Day not found")
+        db.update_planned_day(conn, day_id, title=title.strip() or "Day", notes=notes.strip())
+        db.replace_planned_exercises(conn, day_id, exercises)
+    return RedirectResponse(f"/regiment/days/{day_id}", status_code=303)
+
+
 @app.post("/sessions/start-wod")
 def start_wod(workout_date: str = Form(...), comment: str = Form("")):
     on_date = parse_date(workout_date)
@@ -181,8 +266,18 @@ def sessions_list(request: Request):
 def session_detail(request: Request, session_id: int):
     with db.get_db() as conn:
         session = db.get_session(conn, session_id)
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        # Attach planned targets when session came from a WOD.
+        for ex in session["exercises"]:
+            pe_id = ex.get("planned_exercise_id")
+            if pe_id:
+                pe = conn.execute(
+                    "SELECT target, notes FROM planned_exercise WHERE id = ?", (pe_id,)
+                ).fetchone()
+                if pe:
+                    ex["target"] = pe["target"]
+                    ex["plan_notes"] = pe["notes"]
     return templates.TemplateResponse(
         request, "session.html", {"session": session}
     )

@@ -28,6 +28,13 @@
       Exercise
       <input type="text" name="name" value="{{ ex.name }}" required />
     </label>
+    {% if ex.target or ex.plan_notes %}
+      <p class="muted">
+        Plan:
+        {% if ex.target %}<span class="tag">{{ ex.target }}</span>{% endif %}
+        {% if ex.plan_notes %} {{ ex.plan_notes }}{% endif %}
+      </p>
+    {% endif %}
     <label>
       Sets (one per line: <code>80 kg x 5</code> or <code>135x5 @ RPE8</code>)
       <textarea name="sets_text" rows="4" placeholder="60 kg x 5&#10;70 kg x 5&#10;80 kg x 3">{{ format_sets(ex.sets) }}</textarea>

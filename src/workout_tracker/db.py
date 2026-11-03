@@ -450,3 +450,139 @@ def add_exercise_log(
 
 def delete_session(conn: sqlite3.Connection, session_id: int) -> None:
     conn.execute("DELETE FROM workout_session WHERE id = ?", (session_id,))
+
+
+# --- regiment mutations ---
+
+
+def create_regiment(
+    conn: sqlite3.Connection,
+    name: str,
+    description: str = "",
+    *,
+    make_active: bool = True,
+) -> dict[str, Any]:
+    now = utc_now()
+    if make_active:
+        conn.execute("UPDATE regiment SET is_active = 0")
+    cur = conn.execute(
+        "INSERT INTO regiment (name, description, is_active, created_at) VALUES (?, ?, ?, ?)",
+        (name, description, 1 if make_active else 0, now),
+    )
+    regiment_id = cur.lastrowid
+    # Empty week skeleton so every weekday is editable.
+    for weekday in range(7):
+        title = "Rest" if weekday >= 5 else f"Day {weekday + 1}"
+        conn.execute(
+            "INSERT INTO planned_day (regiment_id, weekday, title, notes) VALUES (?, ?, ?, '')",
+            (regiment_id, weekday, title),
+        )
+    row = conn.execute("SELECT * FROM regiment WHERE id = ?", (regiment_id,)).fetchone()
+    return dict(row)
+
+
+def update_regiment(
+    conn: sqlite3.Connection,
+    regiment_id: int,
+    *,
+    name: str,
+    description: str,
+) -> None:
+    conn.execute(
+        "UPDATE regiment SET name = ?, description = ? WHERE id = ?",
+        (name, description, regiment_id),
+    )
+
+
+def update_planned_day(
+    conn: sqlite3.Connection,
+    day_id: int,
+    *,
+    title: str,
+    notes: str,
+) -> None:
+    conn.execute(
+        "UPDATE planned_day SET title = ?, notes = ? WHERE id = ?",
+        (title, notes, day_id),
+    )
+
+
+def get_planned_day(conn: sqlite3.Connection, day_id: int) -> dict[str, Any] | None:
+    row = conn.execute("SELECT * FROM planned_day WHERE id = ?", (day_id,)).fetchone()
+    if not row:
+        return None
+    day = dict(row)
+    day["exercises"] = list_planned_exercises(conn, day_id)
+    return day
+
+
+def replace_planned_exercises(
+    conn: sqlite3.Connection,
+    day_id: int,
+    exercises: list[tuple[str, str, str]],
+) -> None:
+    """Replace all exercises for a day. Each item is (name, target, notes)."""
+    conn.execute("DELETE FROM planned_exercise WHERE planned_day_id = ?", (day_id,))
+    for i, (name, target, notes) in enumerate(exercises):
+        name = name.strip()
+        if not name:
+            continue
+        conn.execute(
+            """
+            INSERT INTO planned_exercise
+                (planned_day_id, sort_order, name, target, notes)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (day_id, i, name, target.strip(), notes.strip()),
+        )
+
+
+def add_planned_exercise(
+    conn: sqlite3.Connection,
+    day_id: int,
+    *,
+    name: str,
+    target: str = "",
+    notes: str = "",
+) -> None:
+    max_order = conn.execute(
+        "SELECT COALESCE(MAX(sort_order), -1) AS m FROM planned_exercise WHERE planned_day_id = ?",
+        (day_id,),
+    ).fetchone()["m"]
+    conn.execute(
+        """
+        INSERT INTO planned_exercise
+            (planned_day_id, sort_order, name, target, notes)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        (day_id, max_order + 1, name.strip(), target.strip(), notes.strip()),
+    )
+
+
+def update_planned_exercise(
+    conn: sqlite3.Connection,
+    exercise_id: int,
+    *,
+    name: str,
+    target: str,
+    notes: str,
+) -> None:
+    conn.execute(
+        "UPDATE planned_exercise SET name = ?, target = ?, notes = ? WHERE id = ?",
+        (name.strip(), target.strip(), notes.strip(), exercise_id),
+    )
+
+
+def delete_planned_exercise(conn: sqlite3.Connection, exercise_id: int) -> None:
+    conn.execute("DELETE FROM planned_exercise WHERE id = ?", (exercise_id,))
+
+
+def delete_regiment(conn: sqlite3.Connection, regiment_id: int) -> None:
+    was_active = conn.execute(
+        "SELECT is_active FROM regiment WHERE id = ?", (regiment_id,)
+    ).fetchone()
+    conn.execute("DELETE FROM regiment WHERE id = ?", (regiment_id,))
+    if was_active and was_active["is_active"]:
+        nxt = conn.execute("SELECT id FROM regiment ORDER BY id LIMIT 1").fetchone()
+        if nxt:
+            conn.execute("UPDATE regiment SET is_active = 1 WHERE id = ?", (nxt["id"],))

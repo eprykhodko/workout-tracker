@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Edit {{ WEEKDAYS[day.weekday] }} · Workout Tracker{% endblock %}
+{% block content %}
+<section class="card">
+  <p class="muted">
+    <a href="/regiment">← Regiment</a>
+    {% if regiment %} · {{ regiment.name }}{% endif %}
+  </p>
+  <h1>Edit {{ WEEKDAYS[day.weekday] }}</h1>
+
+  <form method="post" action="/regiment/days/{{ day.id }}" class="stack">
+    <label>
+      Day title
+      <input type="text" name="title" value="{{ day.title }}" required />
+    </label>
+    <label>
+      Day notes
+      <textarea name="notes" rows="2">{{ day.notes }}</textarea>
+    </label>
+    <label>
+      Exercises
+      <span class="muted">One per line: <code>Name | target | notes</code></span>
+      <textarea name="exercises_text" rows="12" placeholder="Bench Press | 3x5 | pause on last set&#10;Overhead Press | 3x8&#10;Lateral Raise | 3x15 | light">{% for ex in day.exercises %}{{ ex.name }}{% if ex.target %} | {{ ex.target }}{% endif %}{% if ex.notes %} | {{ ex.notes }}{% endif %}
+{% endfor %}</textarea>
+    </label>
+    <div class="row">
+      <button type="submit" class="primary">Save day</button>
+      <a href="/regiment">Cancel</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

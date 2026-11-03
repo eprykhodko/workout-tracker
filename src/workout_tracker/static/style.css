@@ -136,3 +136,22 @@ code {
   font-size: 0.85em;
   color: var(--accent);
 }
+
+a.buttonish {
+  display: inline-block;
+  border: 1px solid var(--border);
+  background: #243041;
+  color: var(--text);
+  border-radius: 8px;
+  padding: 0.55rem 0.9rem;
+  text-decoration: none;
+}
+a.buttonish:hover {
+  filter: brightness(1.08);
+  text-decoration: none;
+}
+
+input[type="checkbox"] {
+  width: auto;
+  accent-color: var(--accent);
+}
