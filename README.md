@@ -48,26 +48,22 @@ Built for [Oz cloud agent environments](https://docs.warp.dev/platform/environme
 | Health check | `GET /healthz` |
 | Agent guidance | `AGENTS.md` |
 
-### Environment (personal repo)
+### Live environment
 
-```bash
-oz environment create \
-  --name workout-tracker \
-  --personal \
-  --docker-image python:3.12-slim-bookworm \
-  --repo eprykhodko/workout-tracker \
-  --setup-command 'curl -LsSf https://astral.sh/uv/install.sh | sh' \
-  --setup-command 'export PATH="$HOME/.local/bin:$PATH" && cd workout-tracker && uv sync' \
-  --description "Private workout tracker dev env"
-```
+- **ID:** `8vZmtXcj19992bGCeiQabz`
+- **Name:** `workout-tracker` (personal)
+- **Image:** `python:3.12-slim-bookworm`
+- **Setup:** install git/curl → uv → clone `eprykhodko/workout-tracker` → `uv sync`
 
 Run a cloud agent:
 
 ```bash
 oz agent run-cloud \
-  --environment <ENV_ID> \
+  --environment 8vZmtXcj19992bGCeiQabz \
   --prompt "Read AGENTS.md, then add a weekly volume summary page"
 ```
+
+Repo is public so setup can `git clone` without Warp `--repo` binding (that flow kept failing OAuth against this account).
 
 ## Routes
 
